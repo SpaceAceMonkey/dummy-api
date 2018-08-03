@@ -1,0 +1,6 @@
+app:
+  debugging:
+    enabled: true # True = output logging messages to console
+    show_only: [] # Output only messages marked with these labels
+    ignore: [] # Do not output any message marked with one of these labels
+  port: 8000

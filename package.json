@@ -1,0 +1,28 @@
+{
+  "name": "dummy_api",
+  "version": "1.0.0",
+  "description": "Simple dummy API to test against during development.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon index.js",
+    "doc": "npm install && ./node_modules/jsdoc/jsdoc.js index.js ./node_modules/flexi-log/flexi-log.js -d /var/www/html/jsdoc/dummy_api"
+  },
+  "repository": {
+    "type": "git",
+    "url": "dummy_api"
+  },
+  "author": "sdindia@nabancard.com",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.18.3",
+    "express": "^4.16.3",
+    "flexi-log": "^1.2.2",
+    "node-yaml": "^3.1.1",
+    "sprintf-js": "^1.1.1"
+  },
+  "devDependencies": {
+    "jsdoc": "^3.5.5",
+    "nodemon": "^1.18.3"
+  }
+}

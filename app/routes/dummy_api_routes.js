@@ -1,4 +1,5 @@
 /**
+ * Manages dummy API routes
  * 
  * @param {express app} app 
  * @param {*} db 
@@ -73,10 +74,27 @@ module.exports = function(app, db) {
         boolean_route(res, selected);
     });
 
+    app.delete('/mirror', (req, res) => {
+        mirror_route(req, res);
+    });
+
+    app.get('/mirror', (req, res) => {
+        mirror_route(req, res);
+    });
+
     app.post('/mirror', (req, res) => {
         mirror_route(req, res);
     });
 
+    app.put('/mirror', (req, res) => {
+        mirror_route(req, res);
+    });
+
+    /**
+     * @description Returns a single boolean value as the response.
+     * @param {ServerResponse} res 
+     * @param {boolean} value 
+     */
     function boolean_route(res, value) {
         logger.log("Passed to boolean_route.");
         logger.pushLabel("BOOLEAN");
@@ -86,25 +104,60 @@ module.exports = function(app, db) {
     }
     
     /**
-     * @description Returns the request body as the response body
-     * @function
+     * @description Returns the request body to the client 
+     * as the response body
      * @param {IncomingMessage} req 
      * @param {ServerResponse} res 
      */
     function mirror_route(req, res) {
         const content_type = req.headers['content-type'];
-        logger.log(sprintf.sprintf("Mirror received %j", req.body));
+        logger.log(
+            sprintf.sprintf(
+                "Mirror received %j",
+                (
+                    req.method === 'GET' 
+                        ? req.query
+                        : req.body
+                )
+            )
+        );
+
         const body = (() => {
             let body;
-            if (typeof req.body === 'object') {
-                body = JSON.stringify(req.body);
+            if (req.method === 'GET') {
+                body = req.query;
             } else {
-                body = req.body;
+                if (typeof req.body === 'object') {
+                    body = JSON.stringify(req.body);
+                } else {
+                    body = req.body;
+                }
             }
 
             return body;
         })();
-        logger.log("Returning request body to client.")
+
+        if (req.headers['content-type-override']) {
+            logger.log(
+                sprintf.sprintf(
+                    "Overriding content-type with %s.",
+                    req.headers['content-type-override']
+                )
+            );
+
+            res.set(
+                'content-type',
+                req.headers['content-type-override']
+            );
+        }
+
+        logger.log(
+            sprintf.sprintf(
+                "Returning request body to client with content-type %s.",
+                res.get('content-type')
+            )
+        );
+
         res.send(body);
     }
 

@@ -82,14 +82,31 @@ This invokes the API damon with the environment set to "prod." The API will expe
 Dummy-api understands the following HTTP verbs for all routes:
 
 - GET
+- HEAD
+  - HEAD requests will return an empty body when using /mirror
 - DELETE
+- PATCH
 - POST
 - PUT
 
 
 >Accepted content-types
 
-The dummy API correctly handles raw post bodies, x-www-form-urlencoded
+Content-types such as application/json, text/plain, and application/x-www-form-urlencoded will work as you'd expect them to when calling /mirror. Form-data is not processed, and will be returned as a string with crlf and additional formatting as provided by the client.
+
+For the /false, /true, and /truefalse endpoints, all of the HTTP verbs listed in the "HTTP verbs" section will work with all valid content-types.
+
+>Overriding the returned content-type
+
+Under normal usage, dummy-api will automatically set the content-type header before returning data. By adding a "content-type-override" header to your request, you can force dummy-api to use the MIME type specified in that header for the returned data.
+
+For example, adding
+
+```content-type-override: text/plain```
+
+to your request will force dummy-api to return a response using the text/plain MIME type, even if it would otherwise have been, say, application/json.
+
+----
 
 **Documentation**
 

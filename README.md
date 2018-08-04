@@ -64,6 +64,33 @@ Barring any errors, your dummy API server is now up and running, and you can beg
 
 This invokes the API damon with the environment set to "prod." The API will expect to find a file named prod.yml in the config directory.
 
+>Endpoints
+- /false
+  - Returns false
+- /mirror
+  - Returns the same post body or query string that was sent to it
+- /responsecode/[code]
+  - Returns an empty body with an http response code of [code]
+  - Example: ```http://localhost:4248/responsecode/302```
+- /true
+  - Returns true
+- /truefalse
+  - Randomizes between returning true, and returning false
+
+>HTTP verbs
+
+Dummy-api understands the following HTTP verbs for all routes:
+
+- GET
+- DELETE
+- POST
+- PUT
+
+
+>Accepted content-types
+
+The dummy API correctly handles raw post bodies, x-www-form-urlencoded
+
 **Documentation**
 
 To build the JSDoc documentation, run 

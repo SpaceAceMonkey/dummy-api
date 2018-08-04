@@ -1,7 +1,7 @@
 /**
  * Manages dummy API routes
  * 
- * @param {express app} app 
+ * @param {function} app  An instance of express
  * @param {*} db 
  */
 module.exports = function(app, db) {

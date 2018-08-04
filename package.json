@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "api": "nodemon index.js",
-    "doc": "npm install && ./node_modules/jsdoc/jsdoc.js index.js ./node_modules/flexi-log/flexi-log.js -d /var/www/html/jsdoc/dummy-api"
+    "doc": "./node_modules/jsdoc/jsdoc.js $(find . -path './node_modules' -prune -o -iname '*.js' -type f -print) -d "
   },
   "repository": {
     "type": "git",

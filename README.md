@@ -63,3 +63,13 @@ Barring any errors, your dummy API server is now up and running, and you can beg
 ```DUMMY_API_ENV=prod npm run api```
 
 This invokes the API damon with the environment set to "prod." The API will expect to find a file named prod.yml in the config directory.
+
+**Documentation**
+
+To build the JSDoc documentation, run 
+
+```npm run doc -- /var/www/html/jsdoc/dummy-api```
+
+This will build the documentation, and output it to /var/www/html/jsdoc/dummy-api. 
+
+There's not much documentation to see, but it does exist.

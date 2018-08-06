@@ -39,7 +39,7 @@ The debugging section has several sub-keys controlling which debug information i
 
 - enabled: true | false
   - When set to true, debug output is enabled. Otherwise, all debug output is suppressed.
-- show_only: [array of strings]
+- showOnly: [array of strings]
   - When this array is not empty, only messages from channels specified in the array will be output to the console.
 - ignore: [array of strings]
   - Any message whose channel matches an element from this array will be suppressed.

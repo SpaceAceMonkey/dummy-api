@@ -15,7 +15,7 @@ const dummy_api = function dummy_api() {
     const express = global.services.express;
 
     /**
-     * @const 
+     * @const
      * @type {sprintf}
      */
     const sprintf = global.services.sprintf;
@@ -24,29 +24,17 @@ const dummy_api = function dummy_api() {
      * @constant
      * @type {Array}
      */
-    const appConfig = global.appConfig.app;
-    
+    const appConfig = global.appConfig;
+
     global.logger = logger;
-    
-    logger.LOGGING_ENABLED = (
-        appConfig.debugging.enabled
-        && appConfig.debugging.enabled == true
-            ? true
-            : false
-    );
-    logger.showOnly = (
-        Array.isArray(appConfig.debugging.show_only)
-        && appConfig.debugging.show_only.length > 0
-        ? appConfig.debugging.show_only
-        : []
-    );
-    logger.ignore = (
-        Array.isArray(appConfig.debugging.ignore)
-        && appConfig.debugging.ignore.length > 0
-        ? appConfig.debugging.ignore
-        : []
-    );
-    
+
+    logger.LOGGING_ENABLED =
+        appConfig.get('app.debugging.enabled', false);
+    logger.showOnly =
+        appConfig.get('app.debugging.show_only', []);
+    logger.ignore =
+        appConfig.get('app.debugging.ignore', []);
+
     /**
      * @constant
      * @type {express.EventEmitter}
@@ -54,21 +42,21 @@ const dummy_api = function dummy_api() {
      * framework functionality.
      */
     const app = global.services.app;
-    
+
     logger.pushLabel("INIT");
     logger.log("Loading routes.");
     require('./app/routes/dummy_api_routes')(app, {});
-    
+
     /**
      * Attaches to port specified in appConfig.port
      * @memberof dummy_api
      * @function
      */
-    app.listen(global.appConfig.app.port, (()  => {
+    app.listen(global.appConfig.throw().get('app.port'), (()  => {
         logger.log(
             sprintf.sprintf(
                 "Dummy API listening on port %s",
-                appConfig.port
+                appConfig.throw().get('app.port')
             )
         );
         logger.popLabel();

@@ -1,16 +1,88 @@
 /**
+ * Build a tree of alias routes
+ *
+ * @param {object} alias_configuration Routes.aliases configuration from
+ * configuration file
+ * @return {object} Tree of alias routes, and the "real" routes and methods
+ * they point to.
+ */
+const build_route_aliases = function(alias_configuration) {
+    const logger = global.services.logger;
+    const sprintf = global.services.sprintf;
+
+    logger.pushLabel("ALIAS");
+    logger.log("Building route list with aliases.")
+
+    const allowed_methods = ['delete', 'get', 'head', 'patch', 'post', 'put'];
+    const allowed_routes = ['true', 'false', 'truefalse', 'mirror', 'responsecode'];
+
+    const strip_leading_slashes_regex = /^\/+/;
+    const routes = {};
+    allowed_methods.forEach((method_key, index) => {
+        logger.log(sprintf.sprintf("Processing '%s' routes", method_key))
+        routes[method_key] = [];
+
+        Object.keys(alias_configuration).forEach((route_target, route_target_index) => {
+            const valid_route_target = route_target.replace(strip_leading_slashes_regex, '').toLowerCase();
+            const this_method_routes = [];
+            this_method_routes.push('/' + valid_route_target);
+
+            try {
+                if (!allowed_routes.includes(valid_route_target)) {
+                    throw new Error(
+                        sprintf.sprintf("You have attempted to create an alias to non-existent route '%s'", valid_route_target)
+                    );
+                }
+    
+                logger.log(sprintf.sprintf("Processing route '%s'", valid_route_target));
+
+                const aliases = alias_configuration[route_target];
+                if (Object.prototype.toString.call(aliases) === '[object Object]') {
+                    Object.keys(aliases).forEach((alias_key, alias_index) => {
+                        const valid_alias_key = alias_key.replace(strip_leading_slashes_regex, '');
+                        logger.log(sprintf.sprintf("Adding alias '/%s', pointing to '/%s'", valid_alias_key, valid_route_target));
+                        const alias_methods = aliases[alias_key];
+                        if (Array.isArray(alias_methods)) {
+                            alias_methods.forEach((alias_method_key, alias_method_index) => {
+                                if (alias_method_key.toLowerCase() === method_key) {
+                                    this_method_routes.push('/' + valid_alias_key);
+                                }
+                            });
+                        }
+                    });
+                }
+            }
+            catch (exception) {
+                logger.pushLabel("EXCEPTION");
+                logger.log(exception.message);
+                logger.popLabel();
+            }
+
+            routes[method_key].push(this_method_routes);
+        });
+    });
+
+    logger.popLabel();
+    console.dir(routes);
+};
+
+/**
  * Manages dummy API routes
- * 
+ *
  * @param {function} app  An instance of express
- * @param {*} db 
+ * @param {*} db
  */
 module.exports = function(app, db) {
     const logger = global.services.logger;
     const router = global.services.express.Router();
     const sprintf = global.services.sprintf;
+    const appConfig = global.appConfig;
+
+    logger.pushLabel("ROUTING");
+
+    build_route_aliases(appConfig.get('routes.aliases', {}), logger)
 
     router.use('/*', (req, res, next) => {
-        logger.pushLabel("ROUTING");
 
         logger.log(
             sprintf.sprintf(
@@ -35,7 +107,6 @@ module.exports = function(app, db) {
         }
 
         next();
-        logger.popLabel();
     });
     router.use('/mirror', (req, res, next) => {
         logger.log("Passing to mirror_route().")
@@ -158,10 +229,12 @@ module.exports = function(app, db) {
         http_response_code_route(req, res);
     });
 
+    logger.popLabel();
+
     /**
      * @description Returns a single boolean value as the response.
-     * @param {ServerResponse} res 
-     * @param {boolean} value 
+     * @param {ServerResponse} res
+     * @param {boolean} value
      */
     function boolean_route(res, value) {
         logger.pushLabel("BOOLEAN");
@@ -173,19 +246,19 @@ module.exports = function(app, db) {
     /**
      * @description Selects randomly from [true, false] before
      * calling boolean_route() with the selected value.
-     * @param {ServerResponse} res 
+     * @param {ServerResponse} res
      */
     function random_boolean_route(res) {
         const options = [true, false];
-        const selected = 
+        const selected =
             options[Math.floor(Math.random() * options.length)];
         boolean_route(res, selected);
-    }    
+    }
     /**
-     * @description Returns the request body to the client 
+     * @description Returns the request body to the client
      * as the response body
-     * @param {IncomingMessage} req 
-     * @param {ServerResponse} res 
+     * @param {IncomingMessage} req
+     * @param {ServerResponse} res
      */
     function mirror_route(req, res) {
         const content_type = req.headers['content-type'];
@@ -193,26 +266,26 @@ module.exports = function(app, db) {
             sprintf.sprintf(
                 "Received body of '%j'",
                 (
-                    req.method === 'GET' 
+                    req.method === 'GET'
                         ? req.query
                         : req.body
                 )
             )
         );
 
-        const body = (() => {
-            let body;
+        const response_body = (() => {
+            let request_body;
             if (req.method === 'GET') {
-                body = req.query;
+                request_body = req.query;
             } else {
                 if (typeof req.body === 'object') {
-                    body = JSON.stringify(req.body);
+                    request_body = JSON.stringify(req.body);
                 } else {
-                    body = req.body;
+                    request_body = req.body;
                 }
             }
 
-            return body;
+            return request_body;
         })();
 
         logger.log(
@@ -221,13 +294,13 @@ module.exports = function(app, db) {
             )
         );
 
-        res.send(body);
+        res.send(response_body);
     }
 
     /**
      * @description Returns an empty body with the specified HTTP code
-     * @param {IncomingMessage} req 
-     * @param {ServerResponse} res 
+     * @param {IncomingMessage} req
+     * @param {ServerResponse} res
      */
     function http_response_code_route(req, res) {
         const http_code = parseInt(req.params.http_code);

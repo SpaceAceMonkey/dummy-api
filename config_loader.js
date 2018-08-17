@@ -4,12 +4,15 @@ const fs = require('fs');
 
 global.appRoot = path.resolve(__dirname);
 global.appEnvironment = process.env.DUMMY_API_ENV || 'dev';
-global.appConfig = yaml.safeLoad(
-    fs.readFileSync(
-        global.appRoot
-        + "/config/"
-        + global.appEnvironment
-        + ".yml"
-    ),
-    'utf8'
-);
+global.appConfig = 
+    new(require('object-descender'))(
+        yaml.safeLoad(
+            fs.readFileSync(
+                global.appRoot
+                + "/config/"
+                + global.appEnvironment
+                + ".yml"
+            ),
+            'utf8'
+        )
+    );

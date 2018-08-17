@@ -4,3 +4,50 @@ app:
     show_only: [] # Output only messages marked with these labels
     ignore: [] # Do not output any message marked with one of these labels
   port: 4248
+
+# Alias your own routes to existing dummy-api
+# routes.
+# Example:
+# routes:
+#  aliases:
+#    true:
+#      /my/true/alias: ["post", "get"]
+#    mirror:
+#      another_mirror/:some_variable
+#        - get
+#        - head
+#        - delete
+#        - put
+#
+# This shows two ways to create aliases. The two
+# formats are equivalent.
+#
+# The first example creates an alias at
+# /my/true/alias which to the built-in true
+# route. The alias will only work with the get
+# and post methods.
+#
+# The second example creates an endpoint at
+# /another_mirror which requires a single
+# parameter, and points to /mirror. This alias
+# will answer get, head, delete, and put
+# requests.
+routes:
+  aliases:
+    true:
+      mytrue:
+        - delete
+        - get
+        - head
+        - patch
+        - post
+        - put
+      /alsotrue: ["delete", "get", "head", "patch", "post", "put"]
+      /this/is/false: ["get", "post"]
+      also/false:
+        - delete
+        - get
+        - head
+        - patch
+        - post
+        - put

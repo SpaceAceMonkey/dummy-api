@@ -43,6 +43,7 @@ routes:
         - post
         - put
       /alsotrue: ["delete", "get", "head", "patch", "post", "put"]
+    false:
       /this/is/false: ["get", "post"]
       also/false:
         - delete
@@ -51,3 +52,4 @@ routes:
         - patch
         - post
         - put
+    truefalse:

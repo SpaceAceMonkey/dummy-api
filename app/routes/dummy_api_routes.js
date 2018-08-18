@@ -14,7 +14,52 @@ const build_route_aliases = function(alias_configuration) {
     logger.log("Building route list with aliases.")
 
     const allowed_methods = ['delete', 'get', 'head', 'patch', 'post', 'put'];
+    const default_route_category_mappings = {
+        true: 'boolean',
+        false: 'boolen',
+        truefalse: 'random_boolean',
+        mirror: 'mirror',
+        http_code: 'http_code'
+    };
     const allowed_routes = ['true', 'false', 'truefalse', 'mirror', 'responsecode'];
+    const required_routes = {
+        delete: {
+            boolean: ['/true', '/false'],
+            random_boolean: ['/truefalse'],
+            mirror: ['/mirror'],
+            http_code: ['/http_code']
+        },
+        get: {
+            boolean: ['/true', '/false'],
+            random_boolean: ['/truefalse'],
+            mirror: ['/mirror'],
+            http_code: ['/http_code']
+        },
+        head: {
+            boolean: ['/true', '/false'],
+            random_boolean: ['/truefalse'],
+            mirror: ['/mirror'],
+            http_code: ['/http_code']
+        },
+        patch: {
+            boolean: ['/true', '/false'],
+            random_boolean: ['/truefalse'],
+            mirror: ['/mirror'],
+            http_code: ['/http_code']
+        },
+        post: {
+            boolean: ['/true', '/false'],
+            random_boolean: ['/truefalse'],
+            mirror: ['/mirror'],
+            http_code: ['/http_code']
+        },
+        put: {
+            boolean: ['/true', '/false'],
+            random_boolean: ['/truefalse'],
+            mirror: ['/mirror'],
+            http_code: ['/http_code']
+        }
+    };
 
     const strip_leading_slashes_regex = /^\/+/;
     const routes = {};
@@ -22,7 +67,14 @@ const build_route_aliases = function(alias_configuration) {
         logger.log(sprintf.sprintf("Processing '%s' routes", method_key))
         routes[method_key] = [];
 
-        Object.keys(alias_configuration).forEach((route_target, route_target_index) => {
+        const complete_alias_configuration = JSON.parse(JSON.stringify(alias_configuration));
+        const required_route_keys = Object.keys(required_routes);
+        required_route_keys.forEach((key, index) => {
+            if (complete_alias_configuration[key] === undefined) {
+console.log(key + " not defined")
+            }
+        });
+        Object.keys(complete_alias_configuration).forEach((route_target, route_target_index) => {
             const valid_route_target = route_target.replace(strip_leading_slashes_regex, '').toLowerCase();
             const this_method_routes = [];
             this_method_routes.push('/' + valid_route_target);
@@ -36,7 +88,7 @@ const build_route_aliases = function(alias_configuration) {
     
                 logger.log(sprintf.sprintf("Processing route '%s'", valid_route_target));
 
-                const aliases = alias_configuration[route_target];
+                const aliases = complete_alias_configuration[route_target];
                 if (Object.prototype.toString.call(aliases) === '[object Object]') {
                     Object.keys(aliases).forEach((alias_key, alias_index) => {
                         const valid_alias_key = alias_key.replace(strip_leading_slashes_regex, '');

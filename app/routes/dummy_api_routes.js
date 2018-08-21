@@ -1,3 +1,6 @@
+const allowed_methods = ['delete', 'get', 'head', 'patch', 'post', 'put'];
+const allowed_routes = ['true', 'false', 'truefalse', 'mirror', 'responsecode'];
+
 /**
  * Build a tree of alias routes
  *
@@ -11,73 +14,18 @@ const build_route_aliases = function(alias_configuration) {
     const sprintf = global.services.sprintf;
 
     logger.pushLabel("ALIAS");
-    logger.log("Building route list with aliases.")
+    logger.log("Building route list with aliases.");
 
-    const allowed_methods = ['delete', 'get', 'head', 'patch', 'post', 'put'];
-    const default_route_category_mappings = {
-        true: 'boolean',
-        false: 'boolen',
-        truefalse: 'random_boolean',
-        mirror: 'mirror',
-        http_code: 'http_code'
-    };
-    const allowed_routes = ['true', 'false', 'truefalse', 'mirror', 'responsecode'];
-    const required_routes = {
-        delete: {
-            boolean: ['/true', '/false'],
-            random_boolean: ['/truefalse'],
-            mirror: ['/mirror'],
-            http_code: ['/http_code']
-        },
-        get: {
-            boolean: ['/true', '/false'],
-            random_boolean: ['/truefalse'],
-            mirror: ['/mirror'],
-            http_code: ['/http_code']
-        },
-        head: {
-            boolean: ['/true', '/false'],
-            random_boolean: ['/truefalse'],
-            mirror: ['/mirror'],
-            http_code: ['/http_code']
-        },
-        patch: {
-            boolean: ['/true', '/false'],
-            random_boolean: ['/truefalse'],
-            mirror: ['/mirror'],
-            http_code: ['/http_code']
-        },
-        post: {
-            boolean: ['/true', '/false'],
-            random_boolean: ['/truefalse'],
-            mirror: ['/mirror'],
-            http_code: ['/http_code']
-        },
-        put: {
-            boolean: ['/true', '/false'],
-            random_boolean: ['/truefalse'],
-            mirror: ['/mirror'],
-            http_code: ['/http_code']
-        }
-    };
-
-    const strip_leading_slashes_regex = /^\/+/;
     const routes = {};
     allowed_methods.forEach((method_key, index) => {
-        logger.log(sprintf.sprintf("Processing '%s' routes", method_key))
-        routes[method_key] = [];
+        logger.log(sprintf.sprintf("Processing '%s' routes", method_key));
+        routes[method_key] = {};
 
-        const complete_alias_configuration = JSON.parse(JSON.stringify(alias_configuration));
-        const required_route_keys = Object.keys(required_routes);
-        required_route_keys.forEach((key, index) => {
-            if (complete_alias_configuration[key] === undefined) {
-console.log(key + " not defined")
-            }
-        });
-        Object.keys(complete_alias_configuration).forEach((route_target, route_target_index) => {
-            const valid_route_target = route_target.replace(strip_leading_slashes_regex, '').toLowerCase();
+        const alias_configuration_local = JSON.parse(JSON.stringify(alias_configuration));
+
+        Object.keys(alias_configuration_local).forEach((route_target, route_target_index) => {
+            const valid_route_target = stripLeadingSlashes(route_target).toLowerCase();
             const this_method_routes = [];
-            this_method_routes.push('/' + valid_route_target);
 
             try {
                 if (!allowed_routes.includes(valid_route_target)) {
@@ -88,10 +36,10 @@ console.log(key + " not defined")
     
                 logger.log(sprintf.sprintf("Processing route '%s'", valid_route_target));
 
-                const aliases = complete_alias_configuration[route_target];
+                const aliases = alias_configuration_local[route_target];
                 if (Object.prototype.toString.call(aliases) === '[object Object]') {
                     Object.keys(aliases).forEach((alias_key, alias_index) => {
-                        const valid_alias_key = alias_key.replace(strip_leading_slashes_regex, '');
+                        const valid_alias_key = stripLeadingSlashes(alias_key);
                         logger.log(sprintf.sprintf("Adding alias '/%s', pointing to '/%s'", valid_alias_key, valid_route_target));
                         const alias_methods = aliases[alias_key];
                         if (Array.isArray(alias_methods)) {
@@ -110,14 +58,29 @@ console.log(key + " not defined")
                 logger.popLabel();
             }
 
-            routes[method_key].push(this_method_routes);
+            routes[method_key][valid_route_target] = this_method_routes;
         });
     });
 
     logger.popLabel();
-    console.dir(routes);
+    // logger.log(sprintf.sprintf("Routes: %j", routes));
+    // logger.log(sprintf.sprintf("Routes: %j", routes.delete));
+
+    return routes;
 };
 
+/**
+ * Remove the leading slash(es), if any, from a string, and
+ * return the result
+ * .
+ * @param {string} string_to_modify 
+ */
+function stripLeadingSlashes(string_to_modify) {
+    const strip_leading_slashes_regex = /^\/+/;
+    const modified_string = string_to_modify.replace(strip_leading_slashes_regex, '');
+
+    return modified_string;
+}
 /**
  * Manages dummy API routes
  *
@@ -131,11 +94,10 @@ module.exports = function(app, db) {
     const appConfig = global.appConfig;
 
     logger.pushLabel("ROUTING");
-
-    build_route_aliases(appConfig.get('routes.aliases', {}), logger)
+    const organized_alias_routes =
+        new (require('object-descender'))(build_route_aliases(appConfig.get('routes.aliases', {}), logger));
 
     router.use('/*', (req, res, next) => {
-
         logger.log(
             sprintf.sprintf(
                 "Received request of type %s, with data of type %s",
@@ -160,32 +122,29 @@ module.exports = function(app, db) {
 
         next();
     });
-    router.use('/mirror', (req, res, next) => {
-        logger.log("Passing to mirror_route().")
-        logger.pushLabel("MIRROR");
-        next();
-        logger.popLabel();
-    });
-    router.use(['/true', '/false'], (req, res, next) => {
-        logger.log("Passing to boolean_route().")
-        logger.pushLabel("BOOLEAN");
-        next();
-        logger.popLabel();
-    });
-    router.use('/truefalse', (req, res, next) => {
-        logger.log("Passing to random_boolean_route().")
-        logger.pushLabel("RAND_BOOL");
-        next();
-        logger.popLabel();
-    });
-    router.use('/responsecode', (req, res, next) => {
-        logger.log("Passing to http_response_code_route().")
-        logger.pushLabel("HTTP_CODE");
-        next();
-        logger.popLabel();
-    });
-    app.use('/', router);
 
+    const unique_aggregate_alias_routes = {};
+    logger.log(sprintf.sprintf('%j', organized_alias_routes.data_object));
+    allowed_routes.forEach((allowed_route_key, allowed_route_index) => {
+        const aggregate_alias_routes = [];
+        logger.log("Adding '/" + allowed_route_key + "' routes.");
+        aggregate_alias_routes[allowed_route_key] = [];
+        allowed_methods.forEach((allowed_method_key, allowed_method_index) => {
+            aggregate_alias_routes[allowed_route_key] = aggregate_alias_routes[allowed_route_key].concat(
+                organized_alias_routes.get(allowed_method_key + '.' + allowed_route_key, [])
+            );
+        });
+
+        unique_aggregate_alias_routes[allowed_route_key] = aggregate_alias_routes.filter((element, index) => {
+            return true;
+        });
+        console.log("UA = " + JSON.stringify(unique_aggregate_alias_routes))
+    });
+
+    // const unique_aggregate_alias_routes = aggregate_alias_routes.filter((element, position) => {
+    //     const result = 
+    // });
+    logger.log(sprintf.sprintf('%j', unique_aggregate_alias_routes));
     app.delete('/true', (req, res) => {
         boolean_route(res, true);
     });
@@ -281,6 +240,32 @@ module.exports = function(app, db) {
         http_response_code_route(req, res);
     });
 
+    router.use('/mirror', (req, res, next) => {
+        logger.log("Passing to mirror_route().")
+        logger.pushLabel("MIRROR");
+        next();
+        logger.popLabel();
+    });
+    router.use(['/true', '/false'], (req, res, next) => {
+        logger.log("Passing to boolean_route().")
+        logger.pushLabel("BOOLEAN");
+        next();
+        logger.popLabel();
+    });
+    router.use('/truefalse', (req, res, next) => {
+        logger.log("Passing to random_boolean_route().")
+        logger.pushLabel("RAND_BOOL");
+        next();
+        logger.popLabel();
+    });
+    router.use('/responsecode', (req, res, next) => {
+        logger.log("Passing to http_response_code_route().")
+        logger.pushLabel("HTTP_CODE");
+        next();
+        logger.popLabel();
+    });
+    app.use('/', router);
+
     logger.popLabel();
 
     /**
@@ -361,4 +346,3 @@ module.exports = function(app, db) {
         res.send("");
     }
 };
-

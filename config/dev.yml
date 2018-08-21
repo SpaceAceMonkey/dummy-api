@@ -2,7 +2,7 @@ app:
   debugging:
     enabled: true # True = output logging messages to console
     show_only: [] # Output only messages marked with these labels
-    ignore: [] # Do not output any message marked with one of these labels
+    ignore: ['ALIAS'] # Do not output any message marked with one of these labels
   port: 4248
 
 # Alias your own routes to existing dummy-api
@@ -38,18 +38,18 @@ routes:
       mytrue:
         - delete
         - get
-        - head
-        - patch
-        - post
-        - put
+        # - head
+        # - patch
+        # - post
+        # - put
       /alsotrue: ["delete", "get", "head", "patch", "post", "put"]
-    false:
-      /this/is/false: ["get", "post"]
-      also/false:
-        - delete
-        - get
-        - head
-        - patch
-        - post
-        - put
-    truefalse:
+    # false:
+    #   /this/is/false: ["get", "post"]
+    #   also/false:
+    #     - delete
+    #     - get
+    #     - head
+    #     - patch
+    #     - post
+    #     - put
+    # truefalse:

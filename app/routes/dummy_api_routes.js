@@ -1,5 +1,8 @@
 const allowed_methods = ['delete', 'get', 'head', 'patch', 'post', 'put'];
 const allowed_routes = ['true', 'false', 'truefalse', 'mirror', 'responsecode'];
+const route_options = {
+    responsecode: ":http_code([1-5][0-9]{2})"
+};
 
 /**
  * Build a tree of alias routes
@@ -33,7 +36,7 @@ const build_route_aliases = function(alias_configuration) {
                         sprintf.sprintf("You have attempted to create an alias to non-existent route '%s'", valid_route_target)
                     );
                 }
-    
+
                 logger.log(sprintf.sprintf("Processing route '%s'", valid_route_target));
 
                 const aliases = alias_configuration_local[route_target];
@@ -41,7 +44,10 @@ const build_route_aliases = function(alias_configuration) {
                     Object.keys(aliases).forEach((alias_key, alias_index) => {
                         const valid_alias_key = stripLeadingSlashes(alias_key);
                         logger.log(sprintf.sprintf("Adding alias '/%s', pointing to '/%s'", valid_alias_key, valid_route_target));
-                        const alias_methods = aliases[alias_key];
+                        const alias_methods =
+                            Array.isArray(aliases[alias_key]) && aliases[alias_key].length <= 0
+                            ? allowed_methods
+                            : aliases[alias_key];
                         if (Array.isArray(alias_methods)) {
                             alias_methods.forEach((alias_method_key, alias_method_index) => {
                                 if (alias_method_key.toLowerCase() === method_key) {
@@ -63,8 +69,6 @@ const build_route_aliases = function(alias_configuration) {
     });
 
     logger.popLabel();
-    // logger.log(sprintf.sprintf("Routes: %j", routes));
-    // logger.log(sprintf.sprintf("Routes: %j", routes.delete));
 
     return routes;
 };
@@ -73,7 +77,7 @@ const build_route_aliases = function(alias_configuration) {
  * Remove the leading slash(es), if any, from a string, and
  * return the result
  * .
- * @param {string} string_to_modify 
+ * @param {string} string_to_modify
  */
 function stripLeadingSlashes(string_to_modify) {
     const strip_leading_slashes_regex = /^\/+/;
@@ -123,147 +127,106 @@ module.exports = function(app, db) {
         next();
     });
 
+    /**************************************
+     * Ridiculous
+     */
+    const route_handlers = {
+        true: (req, res) => {
+            boolean_route(res, true);
+        },
+        false: (req, res) => {
+            boolean_route(res, false);
+        },
+        truefalse: (req, res) => {
+            random_boolean_route(res);
+        },
+        mirror: (req, res) => {
+            mirror_route(req, res);
+        },
+        responsecode: (req, res) => {
+            http_response_code_route(req, res);
+        }
+    };
+
     const unique_aggregate_alias_routes = {};
-    logger.log(sprintf.sprintf('%j', organized_alias_routes.data_object));
     allowed_routes.forEach((allowed_route_key, allowed_route_index) => {
-        const aggregate_alias_routes = [];
         logger.log("Adding '/" + allowed_route_key + "' routes.");
-        aggregate_alias_routes[allowed_route_key] = [];
+        unique_aggregate_alias_routes[allowed_route_key] = [];
         allowed_methods.forEach((allowed_method_key, allowed_method_index) => {
-            aggregate_alias_routes[allowed_route_key] = aggregate_alias_routes[allowed_route_key].concat(
+            unique_aggregate_alias_routes[allowed_route_key] = unique_aggregate_alias_routes[allowed_route_key].concat(
                 organized_alias_routes.get(allowed_method_key + '.' + allowed_route_key, [])
             );
+            unique_aggregate_alias_routes[allowed_route_key] = unique_aggregate_alias_routes[allowed_route_key]
+                .filter((alias_route, alias_route_index) => {
+                    return unique_aggregate_alias_routes[allowed_route_key].indexOf(alias_route) === alias_route_index;
+                }
+            );
+            const this_route_options = (
+                route_options[allowed_route_key]
+                    ? '/' + stripLeadingSlashes(route_options[allowed_route_key])
+                    : ''
+            );
+            app[allowed_method_key](
+                ['/' + allowed_route_key + this_route_options]
+                .concat(
+                    organized_alias_routes.get(
+                        allowed_method_key + '.' + allowed_route_key, []
+                    ).map((alias_route, alias_index) => {
+                        return alias_route + this_route_options
+                    })
+                ),
+                route_handlers[allowed_route_key]
+            );
         });
-
-        unique_aggregate_alias_routes[allowed_route_key] = aggregate_alias_routes.filter((element, index) => {
-            return true;
-        });
-        console.log("UA = " + JSON.stringify(unique_aggregate_alias_routes))
     });
 
-    // const unique_aggregate_alias_routes = aggregate_alias_routes.filter((element, position) => {
-    //     const result = 
-    // });
-    logger.log(sprintf.sprintf('%j', unique_aggregate_alias_routes));
-    app.delete('/true', (req, res) => {
-        boolean_route(res, true);
-    });
-    app.get('/true', (req, res) => {
-        boolean_route(res, true);
-    });
-    app.head('/true', (req, res) => {
-        boolean_route(res, true);
-    });
-    app.patch('/true', (req, res) => {
-        boolean_route(res, true);
-    });
-    app.post('/true', (req, res) => {
-        boolean_route(res, true);
-    });
-    app.put('/true', (req, res) => {
-        boolean_route(res, true);
-    });
+    /**
+     * This is OK, for now. If I add more base routes, I will probably
+     * automate it the way I did the rest of the alias code, above.
+     */
+    router.use(
+        ['/mirror'].concat(unique_aggregate_alias_routes.mirror),
+        (req, res, next) => {
+            logger.log("Passing to mirror_route().")
+            logger.pushLabel("MIRROR");
+            next();
+            logger.popLabel();
+        }
+    );
+    router.use(
+        ['/true', '/false'].concat(
+            unique_aggregate_alias_routes.true,
+            unique_aggregate_alias_routes.false
+        ),
+        (req, res, next) => {
+            logger.log("Passing to boolean_route().")
+            logger.pushLabel("BOOLEAN");
+            next();
+            logger.popLabel();
+        }
+    );
+    router.use(
+        ['/truefalse'].concat(unique_aggregate_alias_routes.truefalse),
+        (req, res, next) => {
+            logger.log("Passing to random_boolean_route().")
+            logger.pushLabel("RAND_BOOL");
+            next();
+            logger.popLabel();
+        }
+    );
+    router.use(
+        ['/responsecode'].concat(unique_aggregate_alias_routes.responsecode),
+        (req, res, next) => {
+            logger.log("Passing to http_response_code_route().")
+            logger.pushLabel("HTTP_CODE");
+            next();
+            logger.popLabel();
+        }
+    );
+    /**
+     *
+     *************************************/
 
-    app.delete('/false', (req, res) => {
-        boolean_route(res, false);
-    });
-    app.get('/false', (req, res) => {
-        boolean_route(res, false);
-    });
-    app.head('/false', (req, res) => {
-        boolean_route(res, false);
-    });
-    app.patch('/false', (req, res) => {
-        boolean_route(res, false);
-    });
-    app.post('/false', (req, res) => {
-        boolean_route(res, false);
-    });
-    app.put('/false', (req, res) => {
-        boolean_route(res, false);
-    });
-
-    app.delete('/truefalse', (req, res) => {
-        random_boolean_route(res);
-    });
-    app.get('/truefalse', (req, res) => {
-        random_boolean_route(res);
-    });
-    app.head('/truefalse', (req, res) => {
-        random_boolean_route(res);
-    });
-    router.patch('/truefalse', (req, res) => {
-        random_boolean_route(res);
-    });
-    router.post('/truefalse', (req, res) => {
-        random_boolean_route(res);
-    });
-    app.put('/truefalse', (req, res) => {
-        random_boolean_route(res);
-    });
-
-    app.delete('/mirror', (req, res) => {
-        mirror_route(req, res);
-    });
-    app.get('/mirror', (req, res) => {
-        mirror_route(req, res);
-    });
-    app.head('/mirror', (req, res) => {
-        mirror_route(req, res);
-    });
-    app.patch('/mirror', (req, res) => {
-        mirror_route(req, res);
-    });
-    app.post('/mirror', (req, res) => {
-        mirror_route(req, res);
-    });
-    app.put('/mirror', (req, res) => {
-        mirror_route(req, res);
-    });
-
-    app.delete('/responsecode/:http_code([1-5][0-9]{2})', (req, res) => {
-        http_response_code_route(req, res);
-    });
-    app.get('/responsecode/:http_code([1-5][0-9]{2})', (req, res) => {
-        http_response_code_route(req, res);
-    });
-    app.head('/responsecode/:http_code([1-5][0-9]{2})', (req, res) => {
-        http_response_code_route(req, res);
-    });
-    app.patch('/responsecode/:http_code([1-5][0-9]{2})', (req, res) => {
-        http_response_code_route(req, res);
-    });
-    app.post('/responsecode/:http_code([1-5][0-9]{2})', (req, res) => {
-        http_response_code_route(req, res);
-    });
-    app.put('/responsecode/:http_code([1-5][0-9]{2})', (req, res) => {
-        http_response_code_route(req, res);
-    });
-
-    router.use('/mirror', (req, res, next) => {
-        logger.log("Passing to mirror_route().")
-        logger.pushLabel("MIRROR");
-        next();
-        logger.popLabel();
-    });
-    router.use(['/true', '/false'], (req, res, next) => {
-        logger.log("Passing to boolean_route().")
-        logger.pushLabel("BOOLEAN");
-        next();
-        logger.popLabel();
-    });
-    router.use('/truefalse', (req, res, next) => {
-        logger.log("Passing to random_boolean_route().")
-        logger.pushLabel("RAND_BOOL");
-        next();
-        logger.popLabel();
-    });
-    router.use('/responsecode', (req, res, next) => {
-        logger.log("Passing to http_response_code_route().")
-        logger.pushLabel("HTTP_CODE");
-        next();
-        logger.popLabel();
-    });
     app.use('/', router);
 
     logger.popLabel();

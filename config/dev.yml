@@ -2,7 +2,7 @@ app:
   debugging:
     enabled: true # True = output logging messages to console
     show_only: [] # Output only messages marked with these labels
-    ignore: ['ALIAS'] # Do not output any message marked with one of these labels
+    ignore: [] # Do not output any message marked with one of these labels
   port: 4248
 
 # Alias your own routes to existing dummy-api
@@ -12,6 +12,7 @@ app:
 #  aliases:
 #    true:
 #      /my/true/alias: ["post", "get"]
+#      universal_truth: []
 #    mirror:
 #      another_mirror/:some_variable
 #        - get
@@ -27,29 +28,35 @@ app:
 # route. The alias will only work with the get
 # and post methods.
 #
+# The first example also creates a route at /universal_truth
+# which will respond to all supported methods (delete, get,
+# head, patch, post, put)
+#
 # The second example creates an endpoint at
 # /another_mirror which requires a single
 # parameter, and points to /mirror. This alias
 # will answer get, head, delete, and put
 # requests.
 routes:
-  aliases:
-    true:
-      mytrue:
-        - delete
-        - get
-        # - head
-        # - patch
-        # - post
-        # - put
-      /alsotrue: ["delete", "get", "head", "patch", "post", "put"]
-    # false:
-    #   /this/is/false: ["get", "post"]
-    #   also/false:
-    #     - delete
-    #     - get
-    #     - head
-    #     - patch
-    #     - post
-    #     - put
-    # truefalse:
+  # Some demonstration aliases are included, below. Uncomment them,
+  # then load them in your browser or your favorite REST client
+  # to see how they work.
+  # aliases:
+  #   true:
+  #     mytrue:
+  #       - get
+  #     deep/truth:
+  #       - post
+  #   false:
+  #     /this/is/false: ["get", "post"]
+  #     also/false:
+  #       - delete
+  #       - get
+  #       - head
+  #       - patch
+  #       - post
+  #       - put
+  #   truefalse:
+  #     indecisive: ["put", "patch"]
+  #   mirror:
+  #     reflect: []

@@ -6,7 +6,7 @@ global.appRoot = path.resolve(__dirname);
 global.appEnvironment = process.env.DUMMY_API_ENV || 'dev';
 global.appConfig = 
     new(require('object-descender'))(
-        yaml.safeLoad(
+        yaml.load(
             fs.readFileSync(
                 global.appRoot
                 + "/config/"

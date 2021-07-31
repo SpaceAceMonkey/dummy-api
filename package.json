@@ -18,11 +18,12 @@
     "body-parser": "^1.18.3",
     "express": "^4.16.3",
     "flexi-log": "^1.2.2",
-    "node-yaml": "^3.1.1",
+    "js-yaml": "^4.1.0",
+    "object-descender": "^1.0.8",
     "sprintf-js": "^1.1.1"
   },
   "devDependencies": {
     "jsdoc": "^3.6.7",
-    "nodemon": "^1.18.3"
+    "nodemon": "^2.0.12"
   }
 }

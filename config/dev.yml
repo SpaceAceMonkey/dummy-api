@@ -24,7 +24,7 @@ app:
 # formats are equivalent.
 #
 # The first example creates an alias at
-# /my/true/alias which to the built-in true
+# /my/true/alias which points to the built-in true
 # route. The alias will only work with the get
 # and post methods.
 #

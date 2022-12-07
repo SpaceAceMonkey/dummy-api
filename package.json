@@ -15,8 +15,8 @@
   "author": "sdindia@nabancard.com",
   "license": "ISC",
   "dependencies": {
-    "body-parser": "^1.18.3",
-    "express": "^4.16.3",
+    "body-parser": "^1.20.1",
+    "express": "^4.18.2",
     "flexi-log": "^1.2.2",
     "js-yaml": "^4.1.0",
     "object-descender": "^1.0.8",
